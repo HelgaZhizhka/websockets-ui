@@ -1,16 +1,59 @@
-import { WebSocket } from 'ws'
-// import { handleClientMessage } from './handleClientMessage' 
+import { WebSocket, MessageEvent } from 'ws'
+
+import { gameStore } from '../db/gameStore'
+import { Data } from '../utils/interfaces'
+import { stringifyMessageData, parseMessageData } from '../utils/helpers'
+import PlayerManager from './PlayerManager'
+import RoomManager from './RoomManager'
+import Player from './Player'
+import Room from './Room'
+
+const playerManager = new PlayerManager(gameStore)
+const roomManager = new RoomManager(gameStore)
 
 export const handleConnection = (ws: WebSocket) => {
-  console.log('New client connected!')
+  let player: Player
+  let room: Room
 
-  ws.on('message', (message: { data: string }) => {
-    // handleClientMessage(ws, message.data)
-  })
+  ws.onmessage = (event: MessageEvent) => {
+    const message = JSON.parse(event.data.toString())
+    const { type, data } = message
+    const messageData = parseMessageData(data)
+    // console.log(type, messageData)
 
-  ws.on('close', () => {
-    console.log('Client disconnected')
-  })
+    switch (type) {
+      case 'reg':
+        player = playerManager.registerPlayer(
+          messageData.name,
+          messageData.password,
+          ws
+        )
+        ws.send(stringifyMessageData('reg', player.getPlayerData()))
 
-  ws.send(JSON.stringify({ data: 'Hello from server!' }))
+        if (!player.error) {
+          gameStore.add(player)
+          ws.send(stringifyMessageData('update_room', roomManager))
+        }
+
+        break
+      case 'create_room':
+        roomManager.createRoom()
+        break
+      case 'add_user_to_room':
+        room = roomManager.addPlayer(messageData.indexRoom, player) || room
+        break
+      case 'add_ships':
+        break
+      case 'attack':
+        break
+      default:
+        console.log('Unknown message type:', type)
+    }
+  }
+
+  ws.onclose = () => {
+    if (player) {
+      gameStore.delete(player)
+    }
+  }
 }
