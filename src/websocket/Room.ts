@@ -1,5 +1,5 @@
 import { generateUniqueId } from '../utils/helpers'
-import { Ship } from '../utils/interfaces'
+import { stringifyMessageData } from '../utils/helpers'
 import Game from './Game'
 import Player from './Player'
 
@@ -10,18 +10,20 @@ export default class Room {
     index: string
   }[]
   private _players: Player[]
-  private _isStart: number
+  private _isGameStarted: boolean = false
 
   constructor(private _gameStore: Set<Player>) {
     this.roomId = generateUniqueId()
     this.roomUsers = []
     this._players = []
-    this._isStart = 0
     this._gameStore = _gameStore
   }
 
+  public get isGameStarted(): boolean {
+    return this._isGameStarted
+  }
+
   public addPlayer(player: Player) {
-    // console.log(player)
     this._players.push(player)
     this.roomUsers.push({ name: player.name, index: player.id })
 
@@ -30,31 +32,25 @@ export default class Room {
     }
   }
 
+  public removePlayer(player: Player) {
+    this._players = this._players.filter((p) => p.id !== player.id)
+    this.roomUsers = this.roomUsers.filter((user) => user.index !== player.id)
+  }
+
   public createGame() {
-    for (let playerGame of this._gameStore) {
+    this._isGameStarted = true
+    for (let playerGame of this._players) {
       playerGame.ws.send(
-        JSON.stringify({
-          type: 'create_game',
-          data: JSON.stringify({
-            idGame: this.roomId,
-            idPlayer: playerGame.id,
-          }),
-          id: 0,
+        stringifyMessageData('create_game', {
+          idGame: this.roomId,
+          idPlayer: playerGame.id,
         })
       )
     }
   }
 
-  public addShips(player: Player, ships: Ship[]) {
-    player.ships = ships
-    this._isStart += 1
-    if (this._isStart === 2) {
-      this.startGame()
-    }
-  }
-
-  private startGame() {
-    const game = new Game(this._gameStore, this.roomId,...this._players)
+  public startGame() {
+    const game = new Game(this._gameStore, this.roomId, ...this._players)
     for (let player of this._players) {
       player.game = game
     }

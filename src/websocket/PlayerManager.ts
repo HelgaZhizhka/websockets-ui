@@ -9,7 +9,7 @@ export default class PlayerManager {
 
   public registerPlayer(name: string, password: string, ws: WebSocket): Player {
     const newPlayer = new Player(name, password, ws)
-    newPlayer.hasPlayer(this._gameStore)
+    newPlayer.isExistingPlayer(this._gameStore)
     return newPlayer
   }
 

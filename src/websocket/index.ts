@@ -7,19 +7,20 @@ import PlayerManager from './PlayerManager'
 import RoomManager from './RoomManager'
 import Player from './Player'
 import Room from './Room'
+import GameManager from './GameManager'
 
 const playerManager = new PlayerManager(gameStore)
 const roomManager = new RoomManager(gameStore)
+const gameManager = new GameManager(gameStore)
 
 export const handleConnection = (ws: WebSocket) => {
   let player: Player
   let room: Room
 
   ws.onmessage = (event: MessageEvent) => {
-    const message = JSON.parse(event.data.toString())
+    const message = JSON.parse(event.data.toString()) as Data
     const { type, data } = message
-    const messageData = parseMessageData(data)
-    // console.log(type, messageData)
+    const messageData = parseMessageData(data) 
 
     switch (type) {
       case 'reg':
@@ -28,11 +29,20 @@ export const handleConnection = (ws: WebSocket) => {
           messageData.password,
           ws
         )
-        ws.send(stringifyMessageData('reg', player.getPlayerData()))
+        
+        const playerData = player.getPlayerData()
+
+        ws.send(stringifyMessageData('reg', playerData))
 
         if (!player.error) {
           gameStore.add(player)
-          ws.send(stringifyMessageData('update_room', roomManager))
+          ws.send(stringifyMessageData('update_room', roomManager.rooms))
+          ws.send(
+            stringifyMessageData(
+              'update_winners',
+              gameManager.getWinnersData(gameStore)
+            )
+          )
         }
 
         break
@@ -52,8 +62,6 @@ export const handleConnection = (ws: WebSocket) => {
   }
 
   ws.onclose = () => {
-    if (player) {
-      gameStore.delete(player)
-    }
+    console.log('Connection closed')
   }
 }

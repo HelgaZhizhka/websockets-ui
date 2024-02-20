@@ -1,3 +1,4 @@
+import { stringifyMessageData } from '../utils/helpers'
 import Room from './Room'
 import Player from './Player'
 
@@ -8,34 +9,43 @@ export default class RoomManager {
     this._gameStore = _gameStore
   }
 
+  public get rooms() {
+    return this._rooms.filter((room) => !room.isGameStarted)
+  }
+
   public createRoom() {
     const room = new Room(this._gameStore)
     this._rooms.push(room)
-    this.broadcast()
+    this._broadcast()
     return room
   }
 
-  public addPlayer(id: string, player: Player) {
-    const room = this._rooms.find((room) => room.roomId === id)
-    room?.addPlayer(player)
-    //TODO some check if user is in roomUsers, delete user in prev room
-    if (room?.roomUsers.length === 2) {
-      this._rooms = this._rooms.filter((item) => item !== room)
+  public addPlayer(roomId: string, player: Player) {
+    this.removePlayerFromCurrentRoom(player)
+    const room = this.rooms.find((room) => room.roomId === roomId)
+
+    if (!room || room.isGameStarted || room.roomUsers.length === 2) {
+      return null
     }
-    console.log(this._rooms)
-    this.broadcast()
+
+    room.addPlayer(player)
+    this._broadcast()
+
     return room
   }
 
-  private broadcast() {
+  public removePlayerFromCurrentRoom(player: Player) {
+    const currentRoom = this.rooms.find((room) =>
+      room.roomUsers.some((user) => user.index === player.id)
+    )
+    if (currentRoom) {
+      currentRoom.removePlayer(player)
+    }
+  }
+
+  private _broadcast() {
     for (const player of this._gameStore) {
-      player.ws.send(
-        JSON.stringify({
-          type: 'update_room',
-          data: JSON.stringify(this._rooms),
-          id: 0,
-        })
-      )
+      player.ws.send(stringifyMessageData('update_room', this.rooms))
     }
   }
 }

@@ -36,11 +36,22 @@ export default class Player {
     }
   }
 
-  public hasPlayer(players: Set<Player>) {
-    this.error = [...players].some((player) => player.name === this.name)
+  public isExistingPlayer(players: Set<Player>) {
+    const existingPlayer = [...players].find(
+      (player) => player.name === this.name
+    )
 
-    if (this.error) {
-      this.errorText = USER_EXISTS
+    if (existingPlayer) {
+      if (existingPlayer.password === this.password) {
+        this.id = existingPlayer.id
+        this.wins = existingPlayer.wins
+        existingPlayer.ws = this.ws
+        this.error = false
+        this.errorText = ''
+      } else {
+        this.error = true
+        this.errorText = USER_EXISTS
+      }
     }
   }
 }

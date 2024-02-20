@@ -12,10 +12,10 @@ export const parseMessageData = (message: string) => {
   }
 }
 
-export const stringifyMessageData = (type: string, data: {}) => {
+export const stringifyMessageData = (type: string, data: {}, id: number = 0) => {
   return JSON.stringify({
-    type: 'reg',
+    type: type,
     data: JSON.stringify(data),
-    id: 0,
+    id: id,
   })
 }
