@@ -15,7 +15,7 @@ const gameManager = new GameManager(gameStore)
 
 export const handleConnection = (ws: WebSocket) => {
   let player: Player
-  let room: Room
+  let gameRoom: Room
 
   ws.onmessage = (event: MessageEvent) => {
     const message = JSON.parse(event.data.toString()) as Data
@@ -50,9 +50,11 @@ export const handleConnection = (ws: WebSocket) => {
         roomManager.createRoom()
         break
       case 'add_user_to_room':
-        room = roomManager.addPlayer(messageData.indexRoom, player) || room
+        gameRoom =
+          roomManager.addPlayer(messageData.indexRoom, player) || gameRoom
         break
       case 'add_ships':
+        gameRoom.addShips(messageData.indexPlayer, messageData.ships)
         break
       case 'attack':
         break

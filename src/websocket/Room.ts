@@ -1,5 +1,5 @@
-import { generateUniqueId } from '../utils/helpers'
-import { stringifyMessageData } from '../utils/helpers'
+import { generateUniqueId, stringifyMessageData } from '../utils/helpers'
+import { Ship } from '../utils/interfaces'
 import Game from './Game'
 import Player from './Player'
 
@@ -8,19 +8,17 @@ export default class Room {
   roomUsers: {
     name: string
     index: string
-  }[]
-  private _players: Player[]
-  private _isGameStarted: boolean = false
+  }[] = []
+  private _players: Player[] = []
+  private _isGameCreated: boolean = false
 
   constructor(private _gameStore: Set<Player>) {
     this.roomId = generateUniqueId()
-    this.roomUsers = []
-    this._players = []
     this._gameStore = _gameStore
   }
 
-  public get isGameStarted(): boolean {
-    return this._isGameStarted
+  public get isGameCreated(): boolean {
+    return this._isGameCreated
   }
 
   public addPlayer(player: Player) {
@@ -38,7 +36,7 @@ export default class Room {
   }
 
   public createGame() {
-    this._isGameStarted = true
+    this._isGameCreated = true
     for (let playerGame of this._players) {
       playerGame.ws.send(
         stringifyMessageData('create_game', {
@@ -49,10 +47,43 @@ export default class Room {
     }
   }
 
-  public startGame() {
+  public addShips(playerId: string, ships: Ship[]) {
+    const player = this._players.find((p) => p.id === playerId)
+
+    if (!player) {
+      console.error('Player not found in the room')
+      return
+    }
+
+    player.ships = ships
+    player.isReady = true
+    const allReady = this._players.every((p) => p.isReady)
+
+    if (allReady) {
+      this._startGame()
+    }
+  }
+
+  private _startGame() {
+    console.log('game started')
     const game = new Game(this._gameStore, this.roomId, ...this._players)
+
     for (let player of this._players) {
       player.game = game
     }
+
+    const firstPlayerId = this._players[0].id
+    game.currentPlayerIndex = firstPlayerId
+
+    this._players.forEach((player) => {
+      player.ws.send(
+        stringifyMessageData('start_game', {
+          ships: player.ships,
+          currentPlayerIndex: firstPlayerId,
+        })
+      )
+    })
+    console.log(firstPlayerId)
+    game.sendTurnMessage()
   }
 }

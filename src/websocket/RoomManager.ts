@@ -10,7 +10,7 @@ export default class RoomManager {
   }
 
   public get rooms() {
-    return this._rooms.filter((room) => !room.isGameStarted)
+    return this._rooms.filter((room) => !room.isGameCreated)
   }
 
   public createRoom() {
@@ -24,7 +24,7 @@ export default class RoomManager {
     this.removePlayerFromCurrentRoom(player)
     const room = this.rooms.find((room) => room.roomId === roomId)
 
-    if (!room || room.isGameStarted || room.roomUsers.length === 2) {
+    if (!room || room.isGameCreated || room.roomUsers.length === 2) {
       return null
     }
 

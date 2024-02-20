@@ -9,21 +9,19 @@ export default class Player {
   id: string
   name: string
   password: string
-  error: boolean
-  errorText: string
-  wins: number
+  error: boolean = false
+  errorText: string = ''
+  wins: number = 0
+  gameCount: number = 0
   game?: Game
-  ships?: Ship[]
+  ships?: Ship[] = []
   ws: WebSocket
+  isReady: boolean = false
 
   constructor(name: string, password: string, ws: WebSocket) {
     this.id = generateUniqueId()
     this.name = name
     this.password = password
-    this.error = false
-    this.errorText = ''
-    this.wins = 0
-
     this.ws = ws
   }
 

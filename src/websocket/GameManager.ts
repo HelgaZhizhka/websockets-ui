@@ -8,7 +8,7 @@ export default class GameManager {
     this._gameStore = _gameStore
   }
 
-  public get rooms() {
+  public get games() {
     return this._games
   }
 
