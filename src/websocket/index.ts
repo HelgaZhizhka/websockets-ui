@@ -1,7 +1,7 @@
 import { WebSocket, MessageEvent } from 'ws'
 
 import { gameStore } from '../db/gameStore'
-import { Data } from '../utils/interfaces'
+import { Attack, Data } from '../utils/interfaces'
 import { stringifyMessageData, parseMessageData } from '../utils/helpers'
 import PlayerManager from './PlayerManager'
 import RoomManager from './RoomManager'
@@ -20,7 +20,7 @@ export const handleConnection = (ws: WebSocket) => {
   ws.onmessage = (event: MessageEvent) => {
     const message = JSON.parse(event.data.toString()) as Data
     const { type, data } = message
-    const messageData = parseMessageData(data) 
+    const messageData = parseMessageData(data)
 
     switch (type) {
       case 'reg':
@@ -29,7 +29,7 @@ export const handleConnection = (ws: WebSocket) => {
           messageData.password,
           ws
         )
-        
+
         const playerData = player.getPlayerData()
 
         ws.send(stringifyMessageData('reg', playerData))
@@ -57,6 +57,15 @@ export const handleConnection = (ws: WebSocket) => {
         gameRoom.addShips(messageData.indexPlayer, messageData.ships)
         break
       case 'attack':
+        const attackData = messageData as Attack
+        gameRoom.game?.attack(attackData)
+        break
+      case 'randomAttack':
+        gameRoom.game?.randomAttack(player.id)
+        break
+      case 'finish':
+        gameRoom.game?.finishGame(player)
+        console.log(messageData)
         break
       default:
         console.log('Unknown message type:', type)
@@ -65,5 +74,6 @@ export const handleConnection = (ws: WebSocket) => {
 
   ws.onclose = () => {
     console.log('Connection closed')
+    gameRoom.game?.finishGame(player)
   }
 }

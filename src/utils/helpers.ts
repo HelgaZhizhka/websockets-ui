@@ -19,3 +19,10 @@ export const stringifyMessageData = (type: string, data: {}, id: number = 0) => 
     id: id,
   })
 }
+
+export const createGameBoard = (): number[][] => {
+  const size = 10
+  const gameBoard = Array.from({ length: size }, () => Array(size).fill(0))
+  return gameBoard
+}
+

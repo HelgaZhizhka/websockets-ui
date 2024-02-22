@@ -4,11 +4,12 @@ import Game from './Game'
 import Player from './Player'
 
 export default class Room {
-  roomId: string
-  roomUsers: {
+  public roomId: string
+  public roomUsers: {
     name: string
     index: string
   }[] = []
+  public game?: Game
   private _players: Player[] = []
   private _isGameCreated: boolean = false
 
@@ -25,7 +26,7 @@ export default class Room {
     this._players.push(player)
     this.roomUsers.push({ name: player.name, index: player.id })
 
-    if (this.roomUsers.length === 2) {
+    if (this._players.length === 2 && !this._isGameCreated) {
       this.createGame()
     }
   }
@@ -37,11 +38,12 @@ export default class Room {
 
   public createGame() {
     this._isGameCreated = true
-    for (let playerGame of this._players) {
-      playerGame.ws.send(
+
+    for (let player of this._players) {
+      player.ws.send(
         stringifyMessageData('create_game', {
           idGame: this.roomId,
-          idPlayer: playerGame.id,
+          idPlayer: player.id,
         })
       )
     }
@@ -65,25 +67,24 @@ export default class Room {
   }
 
   private _startGame() {
-    console.log('game started')
-    const game = new Game(this._gameStore, this.roomId, ...this._players)
+    // const game = new Game(this.roomId, ...this._players)
+
+    // for (let player of this._players) {
+    //   player.game = game
+    // }
+
+    this.game = new Game(this.roomId, ...this._players)
 
     for (let player of this._players) {
-      player.game = game
-    }
-
-    const firstPlayerId = this._players[0].id
-    game.currentPlayerIndex = firstPlayerId
-
-    this._players.forEach((player) => {
       player.ws.send(
         stringifyMessageData('start_game', {
           ships: player.ships,
-          currentPlayerIndex: firstPlayerId,
+          currentPlayerIndex: player.id,
         })
       )
-    })
-    console.log(firstPlayerId)
-    game.sendTurnMessage()
+    }
+
+    // this.game.sendTurnMessage()
+    this.game.startGame()
   }
 }

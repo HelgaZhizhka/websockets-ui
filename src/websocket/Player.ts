@@ -3,20 +3,18 @@ import { WebSocket } from 'ws'
 import { generateUniqueId } from '../utils/helpers'
 import { Ship } from '../utils/interfaces'
 import { USER_EXISTS } from '../utils/constants'
-import Game from './Game'
 
 export default class Player {
-  id: string
-  name: string
-  password: string
-  error: boolean = false
-  errorText: string = ''
-  wins: number = 0
-  gameCount: number = 0
-  game?: Game
-  ships?: Ship[] = []
-  ws: WebSocket
-  isReady: boolean = false
+  public id: string
+  public name: string
+  public password: string
+  public error: boolean = false
+  public errorText: string = ''
+  public wins: number = 0
+  public shipsCount: number = 0
+  public ships?: Ship[] = []
+  public ws: WebSocket
+  public isReady: boolean = false
 
   constructor(name: string, password: string, ws: WebSocket) {
     this.id = generateUniqueId()

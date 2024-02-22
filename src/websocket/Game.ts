@@ -1,29 +1,56 @@
 import Player from './Player'
 import { Attack, Ship } from '../utils/interfaces'
-import { stringifyMessageData } from '../utils/helpers'
+import {
+  stringifyMessageData,
+  createGameBoard,
+} from '../utils/helpers'
 
 export default class Game {
-  idGame: string
-  players: Player[]
-  currentPlayerIndex: string = ''
+  public idGame: string
+  public players: Player[]
+  public currentPlayerIndex: string = ''
+  private _gameBoards: Map<string, number[][]> = new Map()
 
-  constructor(
-    private _gameStore: Set<Player>,
-    idGame: string,
-    ...players: Player[]
-  ) {
+  constructor(idGame: string, ...players: Player[]) {
     this.idGame = idGame
     this.players = players
-    this._gameStore = _gameStore
+  }
+
+  public startGame() {
+    this.currentPlayerIndex = this.players[1].id
+
+    this._gameBoards = new Map(
+      this.players.map((player) => [player.id, createGameBoard()])
+    )
+    console.log('Game started')
+  }
+
+  public attack(attackData: Attack): void {
+    const { gameId, indexPlayer, x, y } = attackData
+
+    const opponent = this.players.find((p) => p.id !== indexPlayer)
+
+    if (!opponent) {
+      console.error('Opponent not found')
+      return
+    }
+  }
+
+  public randomAttack(playerId: string): void {
+    console.log(playerId)
   }
 
   public sendTurnMessage() {
-    this.players.forEach((player) => {
+    for (let player of this.players) {
       player.ws.send(
         stringifyMessageData('turn', {
-          currentPlayer: this.currentPlayerIndex, 
+          currentPlayer: this.currentPlayerIndex,
         })
       )
-    })
+    }
+  }
+
+  public finishGame(winner: Player) {
+    console.log('Game finished')
   }
 }
