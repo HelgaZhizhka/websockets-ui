@@ -1,5 +1,7 @@
 import { randomUUID } from 'crypto'
 
+import { GameField, GameFieldCell, Ship } from './interfaces'
+
 export const generateUniqueId = (): string => {
   return randomUUID()
 }
@@ -12,7 +14,11 @@ export const parseMessageData = (message: string) => {
   }
 }
 
-export const stringifyMessageData = (type: string, data: {}, id: number = 0) => {
+export const stringifyMessageData = (
+  type: string,
+  data: {},
+  id: number = 0
+) => {
   return JSON.stringify({
     type: type,
     data: JSON.stringify(data),
@@ -20,9 +26,65 @@ export const stringifyMessageData = (type: string, data: {}, id: number = 0) => 
   })
 }
 
-export const createGameBoard = (): number[][] => {
-  const size = 10
-  const gameBoard = Array.from({ length: size }, () => Array(size).fill(0))
-  return gameBoard
+export const FIELD_SIZE = 10
+
+export const createGameBoard = (ships: Ship[]): GameField => {
+  const field: GameField = Array.from({ length: FIELD_SIZE }, () =>
+    Array.from(
+      { length: FIELD_SIZE },
+      (): GameFieldCell => ({
+        isEmpty: true,
+        isShot: false,
+        isSunk: false,
+        ship: null,
+        isNearShip: false,
+      })
+    )
+  )
+
+  ships.forEach((ship) => {
+    for (let i = 0; i < ship.length; i++) {
+      const x = ship.direction ? ship.position.x : ship.position.x + i 
+      const y = ship.direction ? ship.position.y + i : ship.position.y
+
+      if (x < FIELD_SIZE && y < FIELD_SIZE) {
+        field[y][x] = {
+          ...field[y][x],
+          isEmpty: false,
+          ship: ship,
+        }
+      }
+    }
+    markCellsAroundShip(field, ship)
+  })
+
+  return field
 }
 
+const markCellsAroundShip = (field: GameField, ship: Ship): void => {
+  for (let i = 0; i < ship.length; i++) {
+    const x = ship.direction ? ship.position.x : ship.position.x + i
+    const y = ship.direction ? ship.position.y + i : ship.position.y
+
+    const directions = [
+      [-1, -1],
+      [-1, 0],
+      [-1, 1],
+      [0, -1],
+      [0, 1],
+      [1, -1],
+      [1, 0],
+      [1, 1],
+    ]
+
+    directions.forEach(([dx, dy]) => {
+      const newX = x + dx,
+        newY = y + dy
+      if (newX >= 0 && newX < FIELD_SIZE && newY >= 0 && newY < FIELD_SIZE) {
+        if (field[newY][newX].isEmpty) {
+          field[newY][newX].isNearShip = true
+        }
+      }
+    })
+  }
+}

@@ -1,12 +1,13 @@
 import { stringifyMessageData } from '../utils/helpers'
+import GameManager from './GameManager'
 import Room from './Room'
 import Player from './Player'
 
 export default class RoomManager {
   private _rooms: Room[] = []
 
-  constructor(private _gameStore: Set<Player>) {
-    this._gameStore = _gameStore
+  constructor(private _playerStore: Set<Player>, private _gameManager: GameManager) {
+    this._playerStore = _playerStore
   }
 
   public get rooms() {
@@ -14,7 +15,7 @@ export default class RoomManager {
   }
 
   public createRoom() {
-    const room = new Room(this._gameStore)
+    const room = new Room(this._gameManager)
     this._rooms.push(room)
     this._broadcast()
     return room
@@ -43,8 +44,16 @@ export default class RoomManager {
     }
   }
 
+  public closeRoom(roomId: string) {
+    const room = this._rooms.find((room) => room.roomId === roomId)
+    if (room) {
+      this._rooms = this._rooms.filter((room) => room.roomId !== roomId)
+      this._broadcast()
+    }
+  }
+
   private _broadcast() {
-    for (const player of this._gameStore) {
+    for (const player of this._playerStore) {
       player.ws.send(stringifyMessageData('update_room', this.rooms))
     }
   }

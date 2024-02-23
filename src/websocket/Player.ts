@@ -11,7 +11,6 @@ export default class Player {
   public error: boolean = false
   public errorText: string = ''
   public wins: number = 0
-  public shipsCount: number = 0
   public ships?: Ship[] = []
   public ws: WebSocket
   public isReady: boolean = false

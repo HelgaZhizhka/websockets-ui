@@ -1,5 +1,6 @@
 import { generateUniqueId, stringifyMessageData } from '../utils/helpers'
 import { Ship } from '../utils/interfaces'
+import GameManager from './GameManager'
 import Game from './Game'
 import Player from './Player'
 
@@ -13,9 +14,10 @@ export default class Room {
   private _players: Player[] = []
   private _isGameCreated: boolean = false
 
-  constructor(private _gameStore: Set<Player>) {
+  constructor(
+    private _gameManager: GameManager
+  ) {
     this.roomId = generateUniqueId()
-    this._gameStore = _gameStore
   }
 
   public get isGameCreated(): boolean {
@@ -58,6 +60,9 @@ export default class Room {
     }
 
     player.ships = ships
+    player.ships.forEach((ship) => {
+      ship.hits = 0
+    })
     player.isReady = true
     const allReady = this._players.every((p) => p.isReady)
 
@@ -67,13 +72,11 @@ export default class Room {
   }
 
   private _startGame() {
-    // const game = new Game(this.roomId, ...this._players)
-
-    // for (let player of this._players) {
-    //   player.game = game
-    // }
-
-    this.game = new Game(this.roomId, ...this._players)
+    this.game = new Game(
+      this.roomId,
+      this._players,
+      this._gameManager
+    )
 
     for (let player of this._players) {
       player.ws.send(
@@ -84,7 +87,6 @@ export default class Room {
       )
     }
 
-    // this.game.sendTurnMessage()
     this.game.startGame()
   }
 }
