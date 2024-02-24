@@ -21,7 +21,6 @@ export default class PlayerManager {
         wins: player.wins,
       }))
       .sort((a, b) => b.wins - a.wins)
-      console.log(winnersData)
     return winnersData
   }
 }

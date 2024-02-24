@@ -6,7 +6,10 @@ import Player from './Player'
 export default class RoomManager {
   private _rooms: Room[] = []
 
-  constructor(private _playerStore: Set<Player>, private _gameManager: GameManager) {
+  constructor(
+    private _playerStore: Set<Player>,
+    private _gameManager: GameManager
+  ) {
     this._playerStore = _playerStore
   }
 
@@ -14,11 +17,16 @@ export default class RoomManager {
     return this._rooms.filter((room) => !room.isGameCreated)
   }
 
-  public createRoom() {
+  public createRoom(player: Player) {
+    this.removePlayerFromCurrentRoom(player)
     const room = new Room(this._gameManager)
     this._rooms.push(room)
     this._broadcast()
     return room
+  }
+
+  public getRoom(roomId: string) {
+    return this._rooms.find((room) => room.roomId === roomId)
   }
 
   public addPlayer(roomId: string, player: Player) {
@@ -39,17 +47,36 @@ export default class RoomManager {
     const currentRoom = this.rooms.find((room) =>
       room.roomUsers.some((user) => user.index === player.id)
     )
+
     if (currentRoom) {
       currentRoom.removePlayer(player)
     }
+
   }
 
-  public closeRoom(roomId: string) {
-    const room = this._rooms.find((room) => room.roomId === roomId)
-    if (room) {
-      this._rooms = this._rooms.filter((room) => room.roomId !== roomId)
+  public findRoomByPlayerId(playerId: string): Room | undefined {
+    return this._rooms.find((room) =>
+      room.roomUsers.some((user) => user.index === playerId)
+    )
+  }
+
+  public closeRoom(roomId: string): void {
+    const roomIndex = this._rooms.findIndex((room) => room.roomId === roomId)
+
+    if (roomIndex !== -1) {
+      const room = this._rooms[roomIndex]
+
+      room.players.forEach((player) => {
+        player.ws.send(
+          stringifyMessageData('room_closed', { roomId: room.roomId })
+        )
+      })
+
+      this._rooms.splice(roomIndex, 1)
+
       this._broadcast()
     }
+    
   }
 
   private _broadcast() {

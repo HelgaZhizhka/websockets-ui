@@ -44,7 +44,7 @@ export const createGameBoard = (ships: Ship[]): GameField => {
 
   ships.forEach((ship) => {
     for (let i = 0; i < ship.length; i++) {
-      const x = ship.direction ? ship.position.x : ship.position.x + i 
+      const x = ship.direction ? ship.position.x : ship.position.x + i
       const y = ship.direction ? ship.position.y + i : ship.position.y
 
       if (x < FIELD_SIZE && y < FIELD_SIZE) {
@@ -61,30 +61,40 @@ export const createGameBoard = (ships: Ship[]): GameField => {
   return field
 }
 
+export const markCellsAround = (
+  field: GameField,
+  x: number,
+  y: number,
+  action: (cell: GameFieldCell, x: number, y: number) => void
+): void => {
+  const directions = [
+    [-1, -1],
+    [-1, 0],
+    [-1, 1],
+    [0, -1],
+    [0, 1],
+    [1, -1],
+    [1, 0],
+    [1, 1],
+  ]
+
+  directions.forEach(([dx, dy]) => {
+    const newX = x + dx,
+      newY = y + dy
+
+    if (newX >= 0 && newX < FIELD_SIZE && newY >= 0 && newY < FIELD_SIZE) {
+      action(field[newY][newX], newX, newY)
+    }
+
+  })
+}
+
 const markCellsAroundShip = (field: GameField, ship: Ship): void => {
-  for (let i = 0; i < ship.length; i++) {
-    const x = ship.direction ? ship.position.x : ship.position.x + i
-    const y = ship.direction ? ship.position.y + i : ship.position.y
+  markCellsAround(field, ship.position.x, ship.position.y, (cell, x, y) => {
 
-    const directions = [
-      [-1, -1],
-      [-1, 0],
-      [-1, 1],
-      [0, -1],
-      [0, 1],
-      [1, -1],
-      [1, 0],
-      [1, 1],
-    ]
-
-    directions.forEach(([dx, dy]) => {
-      const newX = x + dx,
-        newY = y + dy
-      if (newX >= 0 && newX < FIELD_SIZE && newY >= 0 && newY < FIELD_SIZE) {
-        if (field[newY][newX].isEmpty) {
-          field[newY][newX].isNearShip = true
-        }
-      }
-    })
-  }
+    if (cell.isEmpty) {
+      cell.isNearShip = true
+    }
+    
+  })
 }

@@ -1,7 +1,12 @@
 import Player from './Player'
 import GameManager from './GameManager'
-import { Attack, GameField } from '../utils/interfaces'
-import { stringifyMessageData, createGameBoard } from '../utils/helpers'
+import { Attack, GameField, Ship } from '../utils/interfaces'
+import {
+  stringifyMessageData,
+  createGameBoard,
+  markCellsAround,
+  FIELD_SIZE,
+} from '../utils/helpers'
 
 export default class Game {
   public idGame: string
@@ -66,10 +71,12 @@ export default class Game {
         if (ship.hits === ship.length) {
           ship.isSunk = true
           status = 'killed'
+          this._markCellsAroundSunkShip(gameBoard, ship)
 
           if (this._checkWin(this.opponent.id)) {
             this.finishGame(this.currentPlayer)
           }
+
         }
       }
     }
@@ -83,6 +90,31 @@ export default class Game {
     }
   }
 
+  private _markCellsAroundSunkShip = (field: GameField, ship: Ship): void => {
+    const markedCells: { x: number; y: number }[] = []
+
+    for (let i = 0; i < ship.length; i++) {
+      const partX = ship.direction ? ship.position.x : ship.position.x + i
+      const partY = ship.direction ? ship.position.y + i : ship.position.y
+
+      markCellsAround(field, partX, partY, (cell, x, y) => {
+
+        if (!cell.ship) {
+          cell.isShot = true
+
+          if (!markedCells.some((cell) => cell.x === x && cell.y === y)) {
+            markedCells.push({ x, y })
+          }
+
+        }
+      })
+    }
+
+    markedCells.forEach(({ x, y }) => {
+      this.sendAttackResult(this.currentPlayer.id, { x, y, status: 'miss' })
+    })
+  }
+
   private _changeTurn(): void {
     ;[this.currentPlayer, this.opponent] = [this.opponent, this.currentPlayer]
     this.sendTurnMessage()
@@ -90,6 +122,7 @@ export default class Game {
 
   private _checkWin(playerId: string): boolean {
     const gameBoard = this._gameBoards.get(playerId)
+
     if (!gameBoard) return false
 
     return gameBoard.every((row) =>
@@ -102,9 +135,31 @@ export default class Game {
   }
 
   public randomAttack(playerId: string): void {
-    const x = Math.floor(Math.random() * 10)
-    const y = Math.floor(Math.random() * 10)
-    this.attack({ gameId: this.idGame, indexPlayer: playerId, x, y })
+    const gameBoard = this._gameBoards.get(playerId)
+
+    if (!gameBoard) {
+      console.error('Game board not found')
+      return
+    }
+
+    const availableCells = []
+    for (let y = 0; y < FIELD_SIZE; y++) {
+      for (let x = 0; x < FIELD_SIZE; x++) {
+
+        if (!gameBoard[y][x].isShot) {
+          availableCells.push({ x, y })
+        }
+        
+      }
+    }
+
+    if (availableCells.length > 0) {
+      const randomCellIndex = Math.floor(Math.random() * availableCells.length)
+      const { x, y } = availableCells[randomCellIndex]
+      this.attack({ gameId: this.idGame, indexPlayer: playerId, x, y })
+    } else {
+      console.log('All cells have been shot at')
+    }
   }
 
   public sendTurnMessage() {
@@ -145,6 +200,6 @@ export default class Game {
       player.ws.send(stringifyMessageData('finish', { winPlayer: winner.id }))
     })
 
-    this._gameManager.getWinnersData()
+    this._gameManager.updateWinners()
   }
 }

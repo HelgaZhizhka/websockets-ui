@@ -18,7 +18,7 @@ export default class GameManager {
     return game
   }
 
-  public getWinnersData() {
+  public updateWinners() {
     const winnersData = [...this._playerStore]
       .filter((player) => player.wins > 0)
       .map((player) => ({

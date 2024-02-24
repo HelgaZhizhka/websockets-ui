@@ -37,6 +37,7 @@ export default class Player {
     )
 
     if (existingPlayer) {
+
       if (existingPlayer.password === this.password) {
         this.id = existingPlayer.id
         this.wins = existingPlayer.wins
@@ -47,6 +48,7 @@ export default class Player {
         this.error = true
         this.errorText = USER_EXISTS
       }
+      
     }
   }
 }

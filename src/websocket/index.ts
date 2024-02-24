@@ -37,12 +37,13 @@ export const handleConnection = (ws: WebSocket) => {
         if (!player.error) {
           playerStore.add(player)
           ws.send(stringifyMessageData('update_room', roomManager.rooms))
-          gameManager.getWinnersData()
+          gameManager.updateWinners()
         }
 
         break
       case 'create_room':
-        roomManager.createRoom()
+        const createdRoom = roomManager.createRoom(player)
+        gameRoom = roomManager.addPlayer(createdRoom.roomId, player) || gameRoom
         break
       case 'add_user_to_room':
         gameRoom =
@@ -65,5 +66,20 @@ export const handleConnection = (ws: WebSocket) => {
 
   ws.onclose = () => {
     console.log('Connection closed')
+    const room = roomManager.findRoomByPlayerId(player.id)
+
+    if (room && room.game && room.players.length === 2) {
+      const remainingPlayer = room.players.find((p) => p.id !== player.id)
+
+      if (remainingPlayer) {
+        remainingPlayer.wins += 1
+        remainingPlayer.ws.send(
+          stringifyMessageData('finish', { winPlayer: remainingPlayer.id })
+        )
+        gameManager.updateWinners() 
+      }
+      
+      roomManager.closeRoom(room.roomId)
+    }
   }
 }
