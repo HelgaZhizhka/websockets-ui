@@ -28,5 +28,3 @@ jobs:
     - run: |
         touch ./.env
         echo "${{ secrets.ENV_FILE }}" > ./.env
-    - run: fuser -k 3000/tcp
-    - run: npm run start
